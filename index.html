@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Zonnestelsel Demo</title>
+    <style>
+        body { margin: 0; overflow: hidden; }
+        canvas { display: block; }
+    </style>
+</head>
+<body>
+    <canvas id="webglCanvas"></canvas>
+    <script>
+        // Get canvas and setup WebGL2 context
+        const canvas = document.getElementById('webglCanvas');
+        const gl = canvas.getContext('webgl2');
+        if (!gl) {
+            alert('WebGL2 not supported');
+            throw new Error('WebGL2 not supported');
+        }
+
+        // Resize canvas
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+
+        // Vertex Shader
+        const vsSource = `
+            attribute vec3 aPosition;
+            attribute vec2 aTexCoord;
+            uniform mat4 uModelViewMatrix;
+            uniform mat4 uProjectionMatrix;
+            varying vec2 vTexCoord;
+            void main() {
+                gl_Position = uProjectionMatrix * uModelViewMatrix * vec4(aPosition, 1.0);
+                vTexCoord = aTexCoord;
+            }
+        `;
+
+        // Fragment Shader
+        const fsSource = `
+            precision mediump float;
+            varying vec2 vTexCoord;
+            uniform sampler2D uTexture;
+            void main() {
+                gl_FragColor = texture2D(uTexture, vTexCoord);
+            }
+        `;
+
+        // Compile shaders
+        function compileShader(gl, source, type) {
+            const shader = gl.createShader(type);
+            gl.shaderSource(shader, source);
+            gl.compileShader(shader);
+            if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
+                console.error(gl.getShaderInfoLog(shader));
+                gl.deleteShader(shader);
+                return null;
+            }
+            return shader;
+        }
+
+        const vertexShader = compileShader(gl, vsSource, gl.VERTEX_SHADER);
+        const fragmentShader = compileShader(gl, fsSource, gl.FRAGMENT_SHADER);
+
+        // Create and link program
+        const program = gl.createProgram();
+        gl.attachShader(program, vertexShader);
+        gl.attachShader(program, fragmentShader);
+        gl.linkProgram(program);
+        if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
+            console.error(gl.getProgramInfoLog(program));
+            throw new Error('Failed to link program');
+        }
+
+        // Define a sphere (simplified for brevity)
+        const positions = new Float32Array([
+            // Define positions here...
+        ]);
+        const texCoords = new Float32Array([
+            // Define texture coordinates here...
+        ]);
+
+        // Buffers
+        const positionBuffer = gl.createBuffer();
+        gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
+        gl.bufferData(gl.ARRAY_BUFFER, positions, gl.STATIC_DRAW);
+
+        const texCoordBuffer = gl.createBuffer();
+        gl.bindBuffer(gl.ARRAY_BUFFER, texCoordBuffer);
+        gl.bufferData(gl.ARRAY_BUFFER, texCoords, gl.STATIC_DRAW);
+
+        // Set up texture
+        const texture = gl.createTexture();
+        const image = new Image();
+        image.src = 'earth_texture.jpg'; // Replace with your public texture URL
+        image.onload = () => {
+            gl.bindTexture(gl.TEXTURE_2D, texture);
+            gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, image);
+            gl.generateMipmap(gl.TEXTURE_2D);
+        };
+
+        // Animation loop
+        function render() {
+            gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+            // Draw calls here...
+            requestAnimationFrame(render);
+        }
+
+        render();
+    </script>
+</body>
+</html>
